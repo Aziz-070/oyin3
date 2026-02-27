@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SnakeLite - Ilon o'yini</title>
+    
+    <!-- Asosiy ekran uchun -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%23333'/%3E%3Ctext x='50' y='70' font-size='60' text-anchor='middle' fill='%234caf50'%3E🐍%3C/text%3E%3C/svg%3E">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a2a3a">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a3a, #0f1a24);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        
+        .game-container {
+            background: #1e2f3f;
+            width: 100%;
+            max-width: 450px;
+            border-radius: 35px;
+            padding: 20px 15px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+            border: 2px solid #4caf50;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 0 5px;
+        }
+        
+        .title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .title h1 {
+            font-size: 2rem;
+            color: #4caf50;
+            text-shadow: 2px 2px 0 #2e7d32;
+            letter-spacing: 2px;
+        }
+        
+        .title span {
+            font-size: 2.2rem;
+        }
+        
+        .score-box {
+            background: #0f1a24;
+            padding: 12px 20px;
+            border-radius: 30px;
+            text-align: center;
+            border: 2px solid #4caf50;
+        }
+        
+        .score-label {
+            color: #8b9aa6;
+            font-size: 0.8rem;
+        }
+        
+        .score-value {
+            color: #4caf50;
+            font-size: 2rem;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+        
+        .high-score {
+            font-size: 0.9rem;
+            color: #ffd700;
+            margin-top: 2px;
+        }
+        
+        .board-container {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1/1;
+            background: #0f1a24;
+            border-radius: 25px;
+            padding: 12px;
+            border: 3px solid #4caf50;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            margin-bottom: 15px;
+        }
+        
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            width: 100%;
+            height: 100%;
+            gap: 2px;
+            background: #1e2f3f;
+            padding: 2px;
+            border-radius: 15px;
+        }
+        
+        .cell {
+            background: #0f1a24;
+            border-radius: 6px;
+            transition: all 0.1s;
+            aspect-ratio: 1/1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            color: rgba(255,255,255,0.3);
+        }
+        
+        .cell.snake {
+            background: linear-gradient(135deg, #4caf50, #2e7d32);
+            border-radius: 8px;
+            box-shadow: 0 0 10px #4caf50;
+            animation: snakePulse 1s infinite alternate;
+        }
+        
+        .cell.snake-head {
+            background: linear-gradient(135deg, #ffd700, #ffa500);
+            box-shadow: 0 0 15px #ffd700;
+            animation: headPulse 0.5s infinite alternate;
+        }
+        
+        .cell.food {
+            background: linear-gradient(135deg, #ff4444, #cc0000);
+            border-radius: 50%;
+            box-shadow: 0 0 15px #ff4444;
+            animation: foodPulse 0.8s infinite alternate;
+        }
+        
+        .cell.food-special {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            box-shadow: 0 0 20px #ffd700;
+            animation: specialFood 1s infinite alternate;
+        }
+        
+        @keyframes snakePulse {
+            from { opacity: 0.9; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes headPulse {
+            from { transform: scale(0.95); box-shadow: 0 0 10px #ffd700; }
+            to { transform: scale(1.05); box-shadow: 0 0 20px #ffd700; }
+        }
+        
+        @keyframes foodPulse {
+            from { transform: scale(0.9); }
+            to { transform: scale(1.1); }
+        }
+        
+        @keyframes specialFood {
+            0% { transform: rotate(0deg) scale(0.9); }
+            100% { transform: rotate(360deg) scale(1.1); }
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .direction-pad {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .direction-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        .dir-btn {
+            background: #0f1a24;
+            border: 2px solid #4caf50;
+            width: 70px;
+            height: 70px;
+            border-radius: 35px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            cursor: pointer;
+            color: #4caf50;
+            transition: all 0.1s;
+            box-shadow: 0 5px 0 #1e2f3f;
+        }
+        
+        .dir-btn:active {
+            transform: translateY(5px);
+            box-shadow: none;
+            background: #4caf50;
+            color: #0f1a24;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            background: #0f1a24;
+            border: 2px solid #4caf50;
+            padding: 15px 10px;
+            border-radius: 30px;
+            color: #4caf50;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            transition: all 0.1s;
+            box-shadow: 0 4px 0 #1e2f3f;
+        }
+        
+        .action-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+            background: #4caf50;
+            color: #0f1a24;
+        }
+        
+        .action-btn.pause {
+            border-color: #ffd700;
+            color: #ffd700;
+        }
+        
+        .action-btn.pause:active {
+            background: #ffd700;
+            color: #0f1a24;
+        }
+        
+        .action-btn.reset {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+        
+        .action-btn.reset:active {
+            background: #ff4444;
+            color: #0f1a24;
+        }
+        
+        .speed-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        
+        .speed-btn {
+            background: #0f1a24;
+            border: 1px solid #4caf50;
+            padding: 8px 20px;
+            border-radius: 25px;
+            color: #8b9aa6;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        .speed-btn.active {
+            background: #4caf50;
+            color: #0f1a24;
+            font-weight: bold;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 15px 0 5px;
+            color: #8b9aa6;
+            font-size: 0.9rem;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .footer {
+            text-align: center;
+            color: #4a5b68;
+            font-size: 0.8rem;
+            margin-top: 15px;
+        }
+        
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .overlay.show {
+            display: flex;
+        }
+        
+        .overlay-content {
+            background: #1e2f3f;
+            padding: 35px 25px;
+            border-radius: 40px;
+            text-align: center;
+            max-width: 320px;
+            width: 100%;
+            border: 3px solid #4caf50;
+        }
+        
+        .overlay-content h2 {
+            font-size: 2.5rem;
+            color: #ff4444;
+            margin-bottom: 10px;
+        }
+        
+        .overlay-content p {
+            font-size: 1.3rem;
+            color: #ecf0f1;
+            margin-bottom: 15px;
+        }
+        
+        .overlay-content .final-score {
+            font-size: 2rem;
+            color: #ffd700;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        
+        .overlay-btn {
+            background: #4caf50;
+            color: #0f1a24;
+            border: none;
+            padding: 16px 35px;
+            border-radius: 35px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <div class="title">
+                <span>🐍</span>
+                <h1>SnakeLite</h1>
+            </div>
+            <div class="score-box">
+                <div class="score-label">Hisob</div>
+                <div class="score-value" id="score">0</div>
+                <div class="high-score" id="highScore">🏆 0</div>
+            </div>
+        </div>
+        
+        <div class="board-container">
+            <div class="board" id="board"></div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <span>📊 Uzunlik:</span>
+                <span id="length">3</span>
+            </div>
+            <div class="stat-item">
+                <span>⚡ Tezlik:</span>
+                <span id="speedLevel">O'rta</span>
+            </div>
+            <div class="stat-item">
+                <span>🍎 Yegulik:</span>
+                <span id="foodCount">0</span>
+            </div>
+        </div>
+        
+        <div class="speed-indicator" id="speedSelector">
+            <button class="speed-btn" data-speed="200">Sekin</button>
+            <button class="speed-btn active" data-speed="150">O'rta</button>
+            <button class="speed-btn" data-speed="100">Tez</button>
+            <button class="speed-btn" data-speed="70">Juda tez</button>
+        </div>
+        
+        <div class="controls">
+            <div class="direction-pad">
+                <div class="direction-row">
+                    <div class="dir-btn" id="upBtn">⬆️</div>
+                </div>
+                <div class="direction-row">
+                    <div class="dir-btn" id="leftBtn">⬅️</div>
+                    <div class="dir-btn" id="downBtn">⬇️</div>
+                    <div class="dir-btn" id="rightBtn">➡️</div>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="action-btn pause" id="pauseBtn">⏸️ Pauza</button>
+                <button class="action-btn reset" id="resetBtn">🔄 Yangi</button>
+            </div>
+        </div>
+        
+        <div class="footer">
+            👆 Barmoq bilan suring yoki tugmalarni bosing
+        </div>
+    </div>
+    
+    <div class="overlay" id="gameOverlay">
+        <div class="overlay-content">
+            <h2>GAME OVER</h2>
+            <p>Hisobingiz:</p>
+            <div class="final-score" id="finalScore">0</div>
+            <button class="overlay-btn" id="overlayBtn">Qayta boshlash</button>
+        </div>
+    </div>
+
+    <script>
+        class SnakeGame {
+            constructor() {
+                this.boardSize = 15;
+                this.snake = [];
+                this.food = { row: 7, col: 7 };
+                this.specialFood = null;
+                this.direction = 'right';
+                this.nextDirection = 'right';
+                this.gameActive = false;
+                this.gamePaused = false;
+                this.score = 0;
+                this.highScore = localStorage.getItem('snakeHighScore') || 0;
+                this.speed = 150; // ms
+                this.foodEaten = 0;
+                this.gameLoop = null;
+                this.obstacles = [];
+                
+                this.initGame();
+            }
+            
+            initGame() {
+                // Boshlang'ich ilon
+                this.snake = [
+                    { row: 7, col: 5 },
+                    { row: 7, col: 6 },
+                    { row: 7, col: 7 }
+                ];
+                
+                this.direction = 'right';
+                this.nextDirection = 'right';
+                this.score = 0;
+                this.foodEaten = 0;
+                this.gameActive = true;
+                this.gamePaused = false;
+                this.specialFood = null;
+                this.obstacles = [];
+                
+                // Birinchi yegulik
+                this.generateFood();
+                
+                this.updateScore();
+                this.renderBoard();
+                this.startGame();
+            }
+            
+            startGame() {
+                if (this.gameLoop) clearInterval(this.gameLoop);
+                this.gameLoop = setInterval(() => this.update(), this.speed);
+            }
+            
+            update() {
+                if (!this.gameActive || this.gamePaused) return;
+                
+                this.direction = this.nextDirection;
+                
+                // Boshni yangilash
+                const head = { ...this.snake[this.snake.length - 1] };
+                
+                switch(this.direction) {
+                    case 'up': head.row--; break;
+                    case 'down': head.row++; break;
+                    case 'left': head.col--; break;
+                    case 'right': head.col++; break;
+                }
+                
+                // To'qnashuvni tekshirish
+                if (this.checkCollision(head)) {
+                    this.gameOver();
+                    return;
+                }
+                
+                // Ilonni harakatlantirish
+                this.snake.push(head);
+                
+                // Yegulikni tekshirish
+                if (head.row === this.food.row && head.col === this.food.col) {
+                    // Oddiy yegulik
+                    this.score += 10;
+                    this.foodEaten++;
+                    this.generateFood();
+                    
+                    // Har 5 yegulikda maxsus yegulik
+                    if (this.foodEaten % 5 === 0 && !this.specialFood) {
+                        this.generateSpecialFood();
+                    }
+                } 
+                else if (this.specialFood && head.row === this.specialFood.row && head.col === this.specialFood.col) {
+                    // Maxsus yegulik
+                    this.score += 50;
+                    this.foodEaten += 2;
+                    this.specialFood = null;
+                    
+                    // Ilonni uzaytirish (yana bir bo'g'in qo'shish)
+                    // Hech narsa qilmaymiz, chunki allaqachon push qildik
+                }
+                else {
+                    // Oddiy yurish
+                    this.snake.shift();
+                }
+                
+                // Tezlikni oshirish (har 50 ball)
+                if (this.score > 0 && this.score % 50 === 0 && this.speed > 50) {
+                    this.speed -= 5;
+                    this.restartLoop();
+                }
+                
+                this.updateScore();
+                this.renderBoard();
+            }
+            
+            checkCollision(head) {
+                // Devor bilan to'qnashuv
+                if (head.row < 0 || head.row >= this.boardSize || head.col < 0 || head.col >= this.boardSize) {
+                    return true;
+                }
+                
+                // Ilonning o'zi bilan to'qnashuv
+                for (let segment of this.snake) {
+                    if (segment.row === head.row && segment.col === head.col) {
+                        return true;
+                    }
+                }
+                
+                // To'siqlar bilan to'qnashuv
+                for (let obs of this.obstacles) {
+                    if (obs.row === head.row && obs.col === head.col) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            
+            generateFood() {
+                let newFood;
+                do {
+                    newFood = {
+                        row: Math.floor(Math.random() * this.boardSize),
+                        col: Math.floor(Math.random() * this.boardSize)
+                    };
+                } while (this.isOccupied(newFood));
+                
+                this.food = newFood;
+            }
+            
+            generateSpecialFood() {
+                let newFood;
+                do {
+                    newFood = {
+                        row: Math.floor(Math.random() * this.boardSize),
+                        col: Math.floor(Math.random() * this.boardSize)
+                    };
+                } while (this.isOccupied(newFood));
+                
+                this.specialFood = newFood;
+                
+                // Maxsus yegulik 5 sekunddan keyin yo'qoladi
+                setTimeout(() => {
+                    this.specialFood = null;
+                    this.renderBoard();
+                }, 5000);
+            }
+            
+            isOccupied(pos) {
+                // Ilon egallagan joy
+                for (let segment of this.snake) {
+                    if (segment.row === pos.row && segment.col === pos.col) return true;
+                }
+                
+                // Oddiy yegulik egallagan joy
+                if (this.food && this.food.row === pos.row && this.food.col === pos.col) return true;
+                
+                // Maxsus yegulik egallagan joy
+                if (this.specialFood && this.specialFood.row === pos.row && this.specialFood.col === pos.col) return true;
+                
+                return false;
+            }
+            
+            renderBoard() {
+                const boardElement = document.getElementById('board');
+                boardElement.innerHTML = '';
+                
+                for (let i = 0; i < this.boardSize; i++) {
+                    for (let j = 0; j < this.boardSize; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        
+                        const pos = { row: i, col: j };
+                        
+                        // Ilon boshi
+                        if (this.snake.length > 0 && 
+                            this.snake[this.snake.length - 1].row === i && 
+                            this.snake[this.snake.length - 1].col === j) {
+                            cell.classList.add('snake-head');
+                        }
+                        // Ilon tanasi
+                        else if (this.snake.some(s => s.row === i && s.col === j)) {
+                            cell.classList.add('snake');
+                        }
+                        // Maxsus yegulik
+                        else if (this.specialFood && this.specialFood.row === i && this.specialFood.col === j) {
+                            cell.classList.add('food-special');
+                        }
+                        // Oddiy yegulik
+                        else if (this.food && this.food.row === i && this.food.col === j) {
+                            cell.classList.add('food');
+                        }
+                        
+                        // Koordinatalarni ko'rsatish (foydali emas, lekin chiroyli)
+                        if (!cell.classList.length) {
+                            cell.textContent = '';
+                        }
+                        
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+            
+            updateScore() {
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('length').textContent = this.snake.length;
+                document.getElementById('foodCount').textContent = this.foodEaten;
+                
+                if (this.score > this.highScore) {
+                    this.highScore = this.score;
+                    localStorage.setItem('snakeHighScore', this.highScore);
+                }
+                document.getElementById('highScore').innerHTML = `🏆 ${this.highScore}`;
+            }
+            
+            changeDirection(newDir) {
+                if (!this.gameActive || this.gamePaused) return;
+                
+                // Qarama-qarshi yo'nalishni oldini olish
+                if (
+                    (this.direction === 'up' && newDir === 'down') ||
+                    (this.direction === 'down' && newDir === 'up') ||
+                    (this.direction === 'left' && newDir === 'right') ||
+                    (this.direction === 'right' && newDir === 'left')
+                ) {
+                    return;
+                }
+                
+                this.nextDirection = newDir;
+            }
+            
+            togglePause() {
+                if (!this.gameActive) return;
+                
+                this.gamePaused = !this.gamePaused;
+                const pauseBtn = document.getElementById('pauseBtn');
+                pauseBtn.innerHTML = this.gamePaused ? '▶️ Davom' : '⏸️ Pauza';
+            }
+            
+            gameOver() {
+                this.gameActive = false;
+                clearInterval(this.gameLoop);
+                
+                document.getElementById('finalScore').textContent = this.score;
+                document.getElementById('gameOverlay').classList.add('show');
+            }
+            
+            restartLoop() {
+                clearInterval(this.gameLoop);
+                this.gameLoop = setInterval(() => this.update(), this.speed);
+            }
+            
+            setSpeed(speed) {
+                this.speed = speed;
+                if (this.gameActive) {
+                    this.restartLoop();
+                }
+            }
+            
+            // Swipe uchun
+            handleSwipe(direction) {
+                this.changeDirection(direction);
+            }
+        }
+        
+        // O'yinni boshlash
+        const game = new SnakeGame();
+        
+        // Tugmalar
+        document.getElementById('upBtn').addEventListener('click', () => game.changeDirection('up'));
+        document.getElementById('downBtn').addEventListener('click', () => game.changeDirection('down'));
+        document.getElementById('leftBtn').addEventListener('click', () => game.changeDirection('left'));
+        document.getElementById('rightBtn').addEventListener('click', () => game.changeDirection('right'));
+        
+        document.getElementById('pauseBtn').addEventListener('click', () => game.togglePause());
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            game.initGame();
+            document.getElementById('pauseBtn').innerHTML = '⏸️ Pauza';
+        });
+        
+        document.getElementById('overlayBtn').addEventListener('click', () => {
+            document.getElementById('gameOverlay').classList.remove('show');
+            game.initGame();
+        });
+        
+        // Tezlik tanlash
+        document.querySelectorAll('.speed-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                const speed = parseInt(btn.dataset.speed);
+                game.setSpeed(speed);
+                
+                // Tezlik matnini yangilash
+                const speedNames = { 200: 'Sekin', 150: 'Oʻrta', 100: 'Tez', 70: 'Juda tez' };
+                document.getElementById('speedLevel').textContent = speedNames[speed] || 'Oʻrta';
+            });
+        });
+        
+        // Klaviatura bilan boshqarish
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp': e.preventDefault(); game.changeDirection('up'); break;
+                case 'ArrowDown': e.preventDefault(); game.changeDirection('down'); break;
+                case 'ArrowLeft': e.preventDefault(); game.changeDirection('left'); break;
+                case 'ArrowRight': e.preventDefault(); game.changeDirection('right'); break;
+                case ' ': e.preventDefault(); game.togglePause(); break;
+            }
+        });
+        
+        // Swipe (barmoq bilan surish)
+        let touchStartX = 0, touchStartY = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            if (!touchStartX || !touchStartY) return;
+            
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 30) {
+                // Gorizontal
+                if (diffX > 0) {
+                    game.handleSwipe('right');
+                } else {
+                    game.handleSwipe('left');
+                }
+            } else if (Math.abs(diffY) > 30) {
+                // Vertikal
+                if (diffY > 0) {
+                    game.handleSwipe('down');
+                } else {
+                    game.handleSwipe('up');
+                }
+            }
+            
+            touchStartX = 0;
+            touchStartY = 0;
+        });
+    </script>
+</body>
+</html>
